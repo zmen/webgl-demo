@@ -14,19 +14,19 @@ function App() {
             </NavLink>
           </li>
           <li>
-            <NavLink  activeClassName="active"to="/paint">
-              Paint Demo
-            </NavLink>
+          <NavLink  activeClassName="active"to="/paint">
+          Paint Demo
+          </NavLink>
           </li>
           <li>
-            <NavLink activeClassName="active" to="/moma01">
-              Moma01 Demo
-            </NavLink>
+          <NavLink activeClassName="active" to="/moma01">
+          Moma01 Demo
+          </NavLink>
           </li>
           <li>
-            <NavLink activeClassName="active" to="/moma02">
-              Moma02 Demo
-            </NavLink>
+          <NavLink activeClassName="active" to="/moma02">
+          Moma02 Demo
+          </NavLink>
           </li>
           <li>
             <NavLink activeClassName="active" to="/glich">

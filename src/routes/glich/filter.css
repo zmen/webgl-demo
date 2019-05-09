@@ -1,0 +1,32 @@
+.filter {
+  padding: 20px;
+}
+
+.filter-t-shirt {
+  float: left;
+  background: url("./TShirt.png");
+  width: 500px;
+  height: 500px;
+  background-size: cover;
+}
+
+.filter-canvas {
+  margin-left: 25%;
+  margin-top: 30%;
+  width: 50%;
+  height: 50%;
+}
+
+.operation-area {
+  float: left;
+  margin-top: 30px;
+  width: 300px;
+  margin-left: 30px;
+}
+
+@media (max-width: 576px) {
+  .filter-t-shirt {
+    width: 80vw;
+    height: 80vw;
+  }
+}

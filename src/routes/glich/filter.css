@@ -9,12 +9,12 @@
   height: 500px;
   background-size: cover;
 }
-
-.filter-canvas {
+.demo canvas.filter-canvas {
   margin-left: 25%;
   margin-top: 30%;
   width: 50%;
   height: 50%;
+  background-color: transparent;
 }
 
 .operation-area {

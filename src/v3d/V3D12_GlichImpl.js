@@ -61,9 +61,9 @@ export default class V3D12_GlichImpl {
     let endValue = 0;
     const tick = () => {
       if (startValue > 0) {
-        endValue = 1 - startValue;
+        endValue = 2 - startValue;
       } else if (startValue < 0) {
-        endValue = -1 - startValue;
+        endValue = -2 - startValue;
       }
       this.animate(deg, size, startValue, endValue, glitch, index, () => {
         this.concussionIds[index] = window.requestAnimFrame(tick);

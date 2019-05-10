@@ -1,53 +1,62 @@
 import React, { Component } from 'react';
-import { Button, Form, InputNumber } from 'antd';
+import { Button } from 'antd';
 import './filter.css';
 import TestImg from './test.png';
-import TransparentImg from './transparent.png';
+import Test1Img from './test1.png';
+import Test2Img from './test2.png';
 
-const FormItem = Form.Item;
-
-class Filter extends Component {
+class WrappedFilter extends Component {
 
   constructor(args) {
     super(args);
-    this.state = {};
+    this.state = {
+      nowImage: 1,
+    };
     this.width = 250;
     this.height = 250;
-    this.intervals = [];
+    this.imageList = [TestImg, Test1Img, Test2Img];
+    this.concussionIds = [];
+    this.animateIds = [];
   }
 
   saveRef = (canvas) => {
-    this.canvas = canvas;
-    this.width = canvas.width;
-    this.height = canvas.height;
+    if (canvas) {
+      this.canvas = canvas;
+      this.width = canvas.width;
+      this.height = canvas.height;
+    }
   };
 
   componentDidMount() {
     this.img = new Image();
-    this.img.src = TestImg;
-    this.transparentImg = new Image();
-    this.transparentImg.src = TransparentImg;
+    this.img.src = Test1Img;
     this.img.onload = () => {
       this.reset();
     };
   }
 
+  onSetImage = index => {
+    this.setState({ nowImage: index });
+    this.img.src = this.imageList[index];
+    this.reset();
+  };
+
   getRndInteger = (min, max) => {
     return Math.floor(Math.random() * (max - min + 1)) + min;
   };
 
+  getRndOne = (...numbers) => {
+    return numbers[Math.floor(Math.random() * numbers.length)];
+  };
+
   reset = () => {
-    if (this.animateId) {
-      window.cancelAnimationFrame(this.animateId);
-      this.animateId = null;
+    if (this.animateIds) {
+      this.animateIds.forEach(animateId => window.cancelAnimationFrame(animateId));
+      this.animateIds = [];
     }
-    if (this.concussionId) {
-      window.cancelAnimationFrame(this.concussionId);
-      this.concussionId = null;
-    }
-    if (this.animateTimeoutId) {
-      clearTimeout(this.animateTimeoutId);
-      this.animateTimeoutId = null;
+    if (this.concussionIds.length) {
+      this.concussionIds.forEach(concussionId => window.cancelAnimationFrame(concussionId));
+      this.concussionIds = [];
     }
     this.pausing = false;
     let ctx = this.canvas.getContext('2d');
@@ -61,18 +70,20 @@ class Filter extends Component {
   };
 
   random = () => {
-    this.props.form.setFieldsValue(this.getRandomObject());
-    this.start();
-  };
-
-  getRandomObject = () => {
+    this.reset();
+    let number = this.getRndInteger(1, 4);
     let deg = this.getRndInteger(1, 179);
-    let size = this.getRndInteger(5, 20);
-    let glitch = this.getRndInteger(120, 130);
-    return { deg, size, offset: 50, glitch };
+    for (let i = 1; i <= number; i++) {
+      // 50 ~ 200
+      let size = this.getRndInteger(5, 20);
+      let glitch = this.getRndInteger(50 + 200 / number * (i - 1), 50 + 200 / number * i);
+      let offset = this.getRndOne(100, -100);
+      console.log(offset);
+      this.start(deg, size, offset, glitch, i);
+    }
   };
 
-  animate = (deg, size, startValue, endValue, glitch, done) => {
+  animate = (deg, size, startValue, endValue, glitch, index, done) => {
     const start = Date.now();
     const duration = 30;
     const finish = start + duration;
@@ -89,15 +100,12 @@ class Filter extends Component {
           return;
         }
       }
-      this.animateId = window.requestAnimFrame(tick);
+      this.animateIds[index] = window.requestAnimFrame(tick);
     };
     tick();
   };
 
-  start = () => {
-    this.reset();
-    let values = this.props.form.getFieldsValue();
-    let { offset, deg, size, glitch } = values;
+  start = (deg, size, offset, glitch, index) => {
     let startValue = offset;
     let endValue = 0;
     const tick = () => {
@@ -106,8 +114,8 @@ class Filter extends Component {
       } else if (startValue < 0) {
         endValue = -1 - startValue;
       }
-      this.animate(deg, size, startValue, endValue, glitch, () => {
-        this.concussionId = window.requestAnimFrame(tick);
+      this.animate(deg, size, startValue, endValue, glitch, index, () => {
+        this.concussionIds[index] = window.requestAnimFrame(tick);
       });
       if (Number(endValue.toFixed(5)) === 0) {
         this.reset();
@@ -118,7 +126,15 @@ class Filter extends Component {
     tick();
   };
 
-  translateImage(ctx, targetX, targetY) {
+  translateImage(ctx, targetX, targetY, points) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    ctx.lineTo(points[1].x, points[1].y);
+    ctx.lineTo(points[2].x, points[2].y);
+    ctx.lineTo(points[3].x, points[3].y);
+    ctx.closePath();
+    ctx.clip();
     ctx.clearRect(0, 0, this.width, this.height);
     ctx.drawImage(this.img, targetX, targetY, this.width, this.height);
     ctx.restore();
@@ -140,65 +156,56 @@ class Filter extends Component {
     let ctx = this.canvas.getContext('2d');
     let tanDeg = Math.tan(Math.PI * deg / 180);
     let offsetHeight = tanDeg * this.width;
-    ctx.save();
-    ctx.beginPath();
-    ctx.moveTo(0, glitchY);
-    ctx.lineTo(this.width, glitchY - offsetHeight);
-    ctx.lineTo(this.width, glitchY - offsetHeight + height);
-    ctx.lineTo(0, glitchY + height);
-    ctx.closePath();
-    ctx.clip();
-    this.translateImage(ctx, offsetX, -tanDeg * offsetX);
+    let points = [
+      { x: 0, y: glitchY },
+      { x: this.width, y: glitchY - offsetHeight },
+      { x: this.width, y: glitchY - offsetHeight + height },
+      { x: 0, y: glitchY + height },
+    ];
+    this.translateImage(ctx, offsetX, -tanDeg * offsetX, points);
   }
 
   drawYGlitch(deg, width, offsetY, glitchX) {
     let ctx = this.canvas.getContext('2d');
     let tanDeg = Math.tan(Math.PI * deg / 180);
     let offsetWidth = this.height / tanDeg;
-    ctx.save();
-    ctx.beginPath();
-    ctx.moveTo(glitchX, 0);
-    ctx.lineTo(glitchX - offsetWidth, this.height);
-    ctx.lineTo(glitchX - offsetWidth + width, this.height);
-    ctx.lineTo(glitchX + width, 0);
-    ctx.closePath();
-    ctx.clip();
-    this.translateImage(ctx, -offsetY / tanDeg, offsetY);
+    let points = [
+      { x: glitchX, y: 0 },
+      { x: glitchX - offsetWidth, y: this.height },
+      { x: glitchX - offsetWidth + width, y: this.height },
+      { x: glitchX + width, y: 0 },
+    ];
+    this.translateImage(ctx, -offsetY / tanDeg, offsetY, points);
   }
 
   drawLargeYGlitch(deg, width, offsetY, glitchX) {
     let ctx = this.canvas.getContext('2d');
     let tanDeg = Math.tan(Math.PI * (180 - deg) / 180);
     let offsetWidth = this.height / tanDeg;
-    ctx.save();
-    ctx.beginPath();
-    ctx.moveTo(glitchX, 0);
-    ctx.lineTo(glitchX + offsetWidth, this.height);
-    ctx.lineTo(glitchX + offsetWidth + width, this.height);
-    ctx.lineTo(glitchX + width, 0);
-    ctx.closePath();
-    ctx.clip();
-    this.translateImage(ctx, offsetY / tanDeg, offsetY);
+    let points = [
+      { x: glitchX, y: 0 },
+      { x: glitchX + offsetWidth, y: this.height },
+      { x: glitchX + offsetWidth + width, y: this.height },
+      { x: glitchX + width, y: 0 },
+    ];
+    this.translateImage(ctx, offsetY / tanDeg, offsetY, points);
   }
 
   drawLargeXGlitch(deg, height, offsetX, glitchY) {
     let ctx = this.canvas.getContext('2d');
     let tanDeg = Math.tan(Math.PI * (180 - deg) / 180);
     let offsetHeight = tanDeg * this.width;
-    ctx.save();
-    ctx.beginPath();
-    ctx.moveTo(0, glitchY);
-    ctx.lineTo(this.width, glitchY + offsetHeight);
-    ctx.lineTo(this.width, glitchY + offsetHeight + height);
-    ctx.lineTo(0, glitchY + height);
-    ctx.closePath();
-    ctx.clip();
-    this.translateImage(ctx, offsetX, tanDeg * offsetX);
+    let points = [
+      { x: 0, y: glitchY },
+      { x: this.width, y: glitchY + offsetHeight },
+      { x: this.width, y: glitchY + offsetHeight + height },
+      { x: 0, y: glitchY + height },
+    ];
+    this.translateImage(ctx, offsetX, tanDeg * offsetX, points);
   }
 
   render() {
-    const {} = this.state;
-    const { getFieldDecorator } = this.props.form;
+    const { nowImage } = this.state;
     return (
       <div className='filter'>
         <div className='filter-t-shirt'>
@@ -210,49 +217,28 @@ class Filter extends Component {
           />
         </div>
         <div className='operation-area'>
-          <Button onClick={this.random} type='primary'>随机</Button>
-          &nbsp;&nbsp;
-          <Button onClick={this.start} type='primary'>割裂</Button>
+          <Button onClick={this.random} type='primary'>随机割裂</Button>
           &nbsp;&nbsp;
           <Button onClick={this.pause} type='primary'>暂停</Button>
           &nbsp;&nbsp;
           <Button onClick={this.reset}>重置</Button>
-          <Form>
-            <FormItem label='割裂角度'>
-              {getFieldDecorator('deg', {
-                initialValue: 30,
-              })(
-                <InputNumber />,
-              )}
-            </FormItem>
-            <FormItem label='割裂大小'>
-              {getFieldDecorator('size', {
-                initialValue: 10,
-              })(
-                <InputNumber />,
-              )}
-            </FormItem>
-            <FormItem label='割裂偏移量'>
-              {getFieldDecorator('offset', {
-                initialValue: 100,
-              })(
-                <InputNumber />,
-              )}
-            </FormItem>
-            <FormItem label='割裂位置'>
-              {getFieldDecorator('glitch', {
-                initialValue: 200,
-              })(
-                <InputNumber />,
-              )}
-            </FormItem>
-          </Form>
+          <br />
+          <div className='image-list'>
+            <div className='image-list-label'>选择图片：</div>
+            {this.imageList.map((image, index) => (
+              <img
+                key={index}
+                className={nowImage === index ? 'selected' : ''}
+                src={image}
+                onClick={() => this.onSetImage(index)}
+                alt=""
+              />
+            ))}
+          </div>
         </div>
       </div>
     );
   }
 }
-
-const WrappedFilter = Form.create()(Filter);
 
 export default WrappedFilter;

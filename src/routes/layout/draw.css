@@ -1,0 +1,6 @@
+.auto-layout{
+    background-image: url("images/shirt.jpeg");
+    background-size: contain;
+    background-repeat: no-repeat;
+    padding: 160px;
+}

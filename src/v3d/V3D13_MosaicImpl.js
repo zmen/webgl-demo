@@ -151,14 +151,14 @@ V3D13_MosaicImpl.prototype.drawRoundRectType = function () {
   });
 }
 
-V3D13_MosaicImpl.prototype.changeType = function() {
-  if (this.type === SQUARE) {
+V3D13_MosaicImpl.prototype.changeType = function(type) {
+  if (type === CIRCLE) {
     this.type = CIRCLE;
     this.drawCircleType();
-  } else if (this.type === CIRCLE) {
+  } else if (type === ROUND_RECT) {
     this.type = ROUND_RECT;
     this.drawRoundRectType();
-  } else if (this.type === ROUND_RECT) {
+  } else if (type === SQUARE) {
     this.type = SQUARE;
     this.drawSquareType();
   }

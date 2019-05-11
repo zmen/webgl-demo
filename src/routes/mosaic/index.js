@@ -6,15 +6,27 @@ export default function Mosaic() {
   const canvasRef = useRef();
   const { width, height } = useContext(CanvasContext);
 
+  let paint = null;
+
   useEffect(() => {
     const { current } = canvasRef;
-    const paint = new V3D13_MosaicImpl();
+    paint = new V3D13_MosaicImpl();
     if (current) {
       paint.init(current, width, height);
     }
+    return () => {
+      paint = null;
+    }
   }, [canvasRef, width, height]);
 
+  function changeType() {
+    paint.changeType();
+  }
+
   return (
-    <canvas ref={canvasRef} width={width} height={height} />
+    <React.Fragment>
+      <canvas ref={canvasRef} width={width} height={height} />
+      <button onClick={changeType} type='primary'>改变形状</button>
+    </React.Fragment>
   );
 }

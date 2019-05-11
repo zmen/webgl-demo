@@ -19,14 +19,16 @@ export default function Mosaic() {
     }
   }, [canvasRef, width, height]);
 
-  function changeType() {
-    paint.changeType();
+  function changeType(type) {
+    paint.changeType(type);
   }
 
   return (
     <React.Fragment>
       <canvas ref={canvasRef} width={width} height={height} />
-      <button onClick={changeType} type='primary'>改变形状</button>
+      <button onClick={changeType.bind(this, 'square')} type='primary'>方</button>
+      <button onClick={changeType.bind(this, 'circle')} type='primary'>圆</button>
+      <button onClick={changeType.bind(this, 'round_rect')} type='primary'>圆角矩形</button>
     </React.Fragment>
   );
 }

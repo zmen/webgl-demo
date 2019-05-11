@@ -1,88 +1,182 @@
+import fillRoundRect from './fillRoundRect';
+
 var AppVals_REMIX_PERTICLE_SPEED = 1.0;
 var MOSAIC_SIZE = 10;
 var MPSAIC_LENGTH = 40;
 var MOSAIC_NUMS = MPSAIC_LENGTH * MPSAIC_LENGTH;
-var CNV = 45;
-var IMG_SRC = 'pic5.png';
-var CANVAS_WIDTH = 400;
-var CANVAS_HEIGHT = 400;
-function goto(func, self) {
-  func(self);
-}
+var CNV = 50;
+var CIRCLE = 'circle';
+var SQUARE = 'square';
+var ROUND_RECT = 'round_rect';
+var ROUND_RECT_RADIUS = Math.ceil(MOSAIC_SIZE / 2) - 1;
+var PIC_URL = 'pic4.png';
+var WIDTH = 400;
+var HEIGHT = 400;
 
 function V3D13_MosaicImpl(_weakMode) {
-  //     this._texture= null;//Texture;
-  this.scale = 1;
-  this.position = 0;
-  this._mipmaps = new Array(9);//Vector.<BitmapData>;
-  this._LODLevel = [];//ByteArray;
-  this._martigX = null;//Number;f
-  // this._martigY= null;//Number;
-  this.mUniformColor = [];//原来代码没定义直接使用了，这里定义了一下
-  //     this.mUniformMatrix=[];//原来代码没定义直接使用了，这里定义了一下
+  this._LODLevel = [];
+  this.updatePointsX = [];
+  this.updatePointsY = [];
+  this.updatePointsLod = [];
+}
 
-  this.margin = 7;//Number=7;
-  this.InMargin = 106 / 102;//Number=106/102;
+V3D13_MosaicImpl.prototype.getColor = function (x, y, d) {
+  var x = x * MOSAIC_SIZE;
+  var y = y * MOSAIC_SIZE;
+  var lod = d;
+  var width = WIDTH;
+  var height = HEIGHT;
+  var tmpImageData = this.ctx.getImageData(0, 0, width, height);
+  var tmpPixelData = tmpImageData.data;
 
-  this._lodSum = 0; //private var _lodSum:uint=0; 
-  //     this._lod1Count=0//private var _lod1Count:int=0;
-  this.maxCellLod = null;//public var maxCellLod:uint;
-  // this.maxCellNum=null;//public var maxCellNum:uint;
-  this._bUpdated = null;//Boolean;
-  this._lod1Count = 0;
-  // this._bClear= null;//Boolean;		
-  this.updatePointsX = [];//Vector.<uint>=new Vector.<uint>;
-  this.updatePointsY = [];//Vector.<uint>=new Vector.<uint>;
-  this.updatePointsLod = [];//Vector.<uint>=new Vector.<uint>;
+  var i = x;
+  var j = y;
+  var totalr = 0, totalg = 0, totalb = 0;
+  var size = MOSAIC_SIZE * lod
+  var totalnum = 0
+  for (var dx = 0; dx < size; dx++) {
+    for (var dy = 0; dy < size; dy++) {
+      var x = i + dx;
+      var y = j + dy;
+      var p = x  + y* width
+      if (!(!tmpPixelData[p * 4 + 0] && !tmpPixelData[p * 4 + 1] && !tmpPixelData[p * 4 + 2] && !tmpPixelData[p * 4 + 3])) {
+        totalr += tmpPixelData[p * 4 + 0]
+        totalg += tmpPixelData[p * 4 + 1]
+        totalb += tmpPixelData[p * 4 + 2]
+        totalnum++;
+      }
+    }
+  }
+  var p = i  + j* width
+  if (!totalnum) {
+    return 'rgba(0, 0, 0, 0)';
+  }
+  var resr = totalr / totalnum
+  var resg = totalg / totalnum
+  var resb = totalb / totalnum
+  return 'rgb('+resr+','+resg+','+resb+')';
+}
 
-  // this.srcViewId= null;//int;
+V3D13_MosaicImpl.prototype.getColorSquare = function (x, y, d) {
+  var x = x * MOSAIC_SIZE + d * MOSAIC_SIZE / 2;
+  var y = y * MOSAIC_SIZE + d * MOSAIC_SIZE / 2;
+  var width = WIDTH;
+  var height = HEIGHT;
+  var tmpImageData = this.ctx.getImageData(0, 0, width, height);
+  var tmpPixelData = tmpImageData.data;
 
-  //     this._enableTransparentWhite= null;//Boolean;
-  //     //super(_weakMode);
+  var i = x;
+  var j = y;
+  var totalr = 0, totalg = 0, totalb = 0;
+  var size = 1
+  var totalnum = size * size
+  for (var dx = 0; dx < size; dx++) {
+    for (var dy = 0; dy < size; dy++) {
+      var x = i + dx;
+      var y = j + dy;
+      var p = x  + y* width
+      totalr += tmpPixelData[p * 4 + 0]
+      totalg += tmpPixelData[p * 4 + 1]
+      totalb += tmpPixelData[p * 4 + 2]
+    }
+  }
+  var p = i  + j* width
+  var resr = totalr / totalnum
+  var resg = totalg / totalnum
+  var resb = totalb / totalnum
+  return 'rgb('+resr+','+resg+','+resb+')';
+}
 
-  //     this.textureIndex= 2;//int;	
+V3D13_MosaicImpl.prototype.drawCircle = function (x, y, d) {
+  var color = this.getColor(x, y, d);
+  this.ctx.clearRect(x * MOSAIC_SIZE, y * MOSAIC_SIZE, d * MOSAIC_SIZE, d * MOSAIC_SIZE);
+  this.ctx.beginPath();
+  this.ctx.fillStyle = color;
+  this.ctx.arc(x * MOSAIC_SIZE + d * MOSAIC_SIZE / 2, y * MOSAIC_SIZE + d * MOSAIC_SIZE / 2, d * MOSAIC_SIZE / 2, 0, Math.PI * 2, true);
+  this.ctx.fill();
+  this.ctx.closePath();
+}
 
-  // this._mozWidth= 16*5/2;//int;
-  //     this._mozHeight= 16*6/2;//int;
-  this._mosicRemderSize = 23.9 * 2;//Number;
+V3D13_MosaicImpl.prototype.drawSquare = function (x, y, d, getColorFromCenter = false) {
+  var color;
+  if (getColorFromCenter) {
+    color = this.getColorSquare(x, y, d);
+  } else {
+    color = this.getColor(x, y, d);
+  }
+  this.ctx.clearRect(x * MOSAIC_SIZE, y * MOSAIC_SIZE, d * MOSAIC_SIZE, d * MOSAIC_SIZE);
+  this.ctx.beginPath();
+  this.ctx.fillStyle = color;
+  this.ctx.fillRect(x * MOSAIC_SIZE, y * MOSAIC_SIZE, d * MOSAIC_SIZE, d * MOSAIC_SIZE);
+  this.ctx.fill();
+  this.ctx.closePath();
+}
 
-  //     if(_weakMode){
-  //         this._mozWidth*=3/2.0;
-  //         this._mozHeight*=3/2.0;
-  //         this._mosicRemderSize*=2/3.0;
-  //     }
+V3D13_MosaicImpl.prototype.drawRoundRect = function (x, y, d) {
+  var color = this.getColor(x, y, d);
+  this.ctx.clearRect(x * MOSAIC_SIZE, y * MOSAIC_SIZE, d * MOSAIC_SIZE, d * MOSAIC_SIZE);
+  fillRoundRect(this.ctx, x * MOSAIC_SIZE, y * MOSAIC_SIZE, d * MOSAIC_SIZE, d * MOSAIC_SIZE, ROUND_RECT_RADIUS, color);
+} 
 
-  //     //是两边空白的大小吗？
-  this._martigX = 0;
-  this._martigY = 0;
-  // this._martigX=(UTItemManager.IMAGE_WIDTH-this._mosicRemderSize*this._mozWidth)*.5;//-_mosicRemderSize*.5;;
-  //     this._martigY=(UTItemManager.IMAGE_HEIGHT-this._mosicRemderSize*this._mozHeight)*.5;//-_mosicRemderSize*.5;;
+V3D13_MosaicImpl.prototype.drawCircleType = function () {
+  this.mirror.forEach(v => {
+    if (!!v) {
+      var x = v[0];
+      var y = v[1];
+      var d = v[2];
+      this.drawCircle(x, y, d);
+    }
+  });
+}
 
-  //     //trace(_mozWidth,_mozHeight,_martigX,_martigY);  //？？？？bug
+V3D13_MosaicImpl.prototype.drawSquareType = function () {
+  this.mirror.forEach(v => {
+    if (!!v) {
+      var x = v[0];
+      var y = v[1];
+      var d = v[2];
+      this.drawSquare(x, y, d, true);
+    }
+  });
+}
 
+V3D13_MosaicImpl.prototype.drawRoundRectType = function () {
+  this.mirror.forEach(v => {
+    if (!!v) {
+      var x = v[0];
+      var y = v[1];
+      var d = v[2];
+      this.drawRoundRect(x, y, d, true);
+    }
+  });
+}
 
-  //     this._LODLevel=[];
-  //     //_LODLevel.position=0;
-  //     while(this._LODLevel.length<this._mozWidth*this._mozHeight){
-  //         this._LODLevel.push(1);
-  //     }
-
-  //     this._enableTransparentWhite=false;//AppVals.HISTORY==0;
-  //srcViewId=UTCreateMain.getActiveSrcType();
+V3D13_MosaicImpl.prototype.changeType = function() {
+  if (this.type === SQUARE) {
+    this.type = CIRCLE;
+    this.drawCircleType();
+  } else if (this.type === CIRCLE) {
+    this.type = ROUND_RECT;
+    this.drawRoundRectType();
+  } else if (this.type === ROUND_RECT) {
+    this.type = SQUARE;
+    this.drawSquareType();
+  }
 }
 
 V3D13_MosaicImpl.prototype.init = function (canvas, width, height) {
+  this.type = SQUARE;
   this.canvas = canvas;
   this.ctx = this.canvas.getContext('2d');
   this.canvas.width = width;
   this.canvas.height = height;
   var self = this;
   var img = new Image();
-  img.src = IMG_SRC;
+  img.src = PIC_URL;
   img.onload = function () {
-    self.ctx.drawImage(img, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    var srcBmd = self.ctx.getImageData(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    self.generateMipmapWithBitmap(srcBmd, CANVAS_WIDTH, CANVAS_HEIGHT);
+    self.ctx.drawImage(img, 0, 0, WIDTH, HEIGHT);
+    var srcBmd = self.ctx.getImageData(0, 0, WIDTH, HEIGHT);
+    self.generateMipmapWithBitmap(srcBmd, WIDTH, HEIGHT);
   }
 
   this._LODLevel = new Array(MOSAIC_NUMS).fill(1).map((v, i) => {
@@ -90,7 +184,11 @@ V3D13_MosaicImpl.prototype.init = function (canvas, width, height) {
     var y = Math.floor(i / MPSAIC_LENGTH);
     return ([x, y, 1, i]);
   });
-  this.maxCellLod = 40 * 40;
+  this.mirror = new Array(MOSAIC_NUMS).fill(1).map((v, i) => {
+    var x = i % MPSAIC_LENGTH;
+    var y = Math.floor(i / MPSAIC_LENGTH);
+    return ([x, y, 1, i]);
+  });
 
   this.canvas.addEventListener('mousedown', this.startEvent.bind(this), !1);
 }
@@ -100,15 +198,12 @@ V3D13_MosaicImpl.prototype.generateMipmapWithBitmap = function (_org, width, hei
   var pixelData = imageData.data;
   var tmpImageData = this.ctx.getImageData(0, 0, width, height);
   var tmpPixelData = tmpImageData.data;
-  console.log(tmpImageData);
 
-  var size = MOSAIC_SIZE//马赛克方块的边长
+  var size = MOSAIC_SIZE
   var totalnum = size * size
-  //此处循环需从1开始，..-1结束，否则在里面的二层循环（dx=-1,dy=-1）就会越界
   for (var i = 0; i < height; i += size) {
     for (var j = 0; j < width; j += size) {
       var totalr = 0, totalg = 0, totalb = 0;
-      //一个像素点周围的加上自身
       for (var dx = 0; dx < size; dx++) {
         for (var dy = 0; dy < size; dy++) {
           var x = i + dx;
@@ -119,7 +214,7 @@ V3D13_MosaicImpl.prototype.generateMipmapWithBitmap = function (_org, width, hei
           totalb += tmpPixelData[p * 4 + 2]
         }
       }
-      var p = i  + j* width//每个像素点
+      var p = i  + j* width
       var resr = totalr / totalnum
       var resg = totalg / totalnum
       var resb = totalb / totalnum
@@ -135,87 +230,36 @@ V3D13_MosaicImpl.prototype.generateMipmapWithBitmap = function (_org, width, hei
       }
     }
   }
-  // this.ctx.clear();
   this.ctx.putImageData(imageData, 0, 0, 0, 0, width, height)
 }
-
-V3D13_MosaicImpl.prototype.getXY = function (t) {
-  const i = t.touches ? t.touches[0].clientX : t.clientX;
-
-  const e = t.touches ? t.touches[0].clientY : t.clientY;
-  return {
-    x: i - this.canvas.offsetLeft + (document.body.scrollLeft || document.documentElement.scrollLeft),
-    y: e - this.canvas.offsetTop + (document.body.scrollTop || document.documentElement.scrollTop),
-  };// 返回坐标对象
-};
 
 V3D13_MosaicImpl.prototype.startEvent = function (t) {
   t.preventDefault();
   t.stopPropagation();
-  let i = this.getXY(t);
-  this.addedForce(i.x, i.y);
+  this.addedForce();
   this.draw();
 }
 
 V3D13_MosaicImpl.prototype.draw = function () {
-  console.log(this.updatePointsX);
-  console.log(this.updatePointsY);
-  console.log(this.updatePointsLod);
-  console.log(this._LODLevel.length);
-  // return;
-  
-  var width = CANVAS_WIDTH;
-  var height = CANVAS_HEIGHT;
-  var imageData = this.ctx.getImageData(0, 0, width, height);
-  var pixelData = imageData.data;
-  //创建作为参考的像素
-  var tmpImageData = this.ctx.getImageData(0, 0, width, height);
-  var tmpPixelData = tmpImageData.data;
-
-
   this.updatePointsX.forEach((v, i) => {
-    var x = this.updatePointsX[i] * MOSAIC_SIZE;
-    var y = this.updatePointsY[i] * MOSAIC_SIZE;
+    var x = this.updatePointsX[i];
+    var y = this.updatePointsY[i];
     var lod = this.updatePointsLod[i];
-
-    var i = x;
-    var j = y;
-    var totalr = 0, totalg = 0, totalb = 0;
-    var size = MOSAIC_SIZE * lod
-    var totalnum = size * size
-    for (var dx = 0; dx < size; dx++) {
-      for (var dy = 0; dy < size; dy++) {
-        var x = i + dx;
-        var y = j + dy;
-        var p = x  + y* width
-        totalr += tmpPixelData[p * 4 + 0]
-        totalg += tmpPixelData[p * 4 + 1]
-        totalb += tmpPixelData[p * 4 + 2]
-      }
+    if (this.type === SQUARE) {
+      this.drawSquare(x, y, lod);
+    } else if (this.type === CIRCLE) {
+      this.drawCircle(x, y, lod);
+    } else if (this.type === ROUND_RECT) {
+      this.drawRoundRect(x, y, lod);
     }
-    var p = i  + j* width
-    var resr = totalr / totalnum
-    var resg = totalg / totalnum
-    var resb = totalb / totalnum
-    for (var dx = 0; dx < size; dx++) {
-      for (var dy = 0; dy < size; dy++) {
-        var x = i + dx;
-        var y = j + dy;
-        var p = x  + y* width
-        pixelData[p * 4 + 0] = resr
-        pixelData[p * 4 + 1] = resg
-        pixelData[p * 4 + 2] = resb
-      }
-    }
+    return;
   });
   this.updatePointsX = [];
   this.updatePointsY = [];
   this.updatePointsLod = [];
-  this.ctx.clearRect(0, 0, width, height);
-  this.ctx.putImageData(imageData, 0, 0, 0, 0, width, height)
 }
 
-V3D13_MosaicImpl.prototype.addedForce = function (_x, _y) {
+V3D13_MosaicImpl.prototype.addedForce = function () {
   var self = this;
   var x;
   var y;
@@ -230,9 +274,7 @@ V3D13_MosaicImpl.prototype.addedForce = function (_x, _y) {
 
   function LABEL_RESTART_RANDOM(self) {
     index = Math.floor(self._LODLevel.length * Math.random());
-    // console.log("index: " + index)
     node = self._LODLevel[index];
-    // console.log(node);
     x = node[0];
     y = node[1];
     d = node[2];
@@ -268,15 +310,18 @@ V3D13_MosaicImpl.prototype.addedForce = function (_x, _y) {
             }
           }
         });
-        // if (lx === x && ly === y) {
-        //   // self._LODLevel[lx + 40 * ly][2] = td;
-        // } else {
-        //   self._LODLevel[lx + 40 * ly] = undefined;
-        // }
+        self.mirror.forEach((v, i) => {
+          if (v && v[0] === lx && v[1] === ly) {
+            if (v && v[0] === x && v[1] === y) {
+              v[2] = td;
+            } else {
+              self.mirror[i] = undefined;
+            }
+          }
+        });
       }
     }
     self._LODLevel = self._LODLevel.filter(v => !!v);
-    // console.log(self._LODLevel.filter(v => v[2] !== 1));
     self.updatePointsX.push(x);
     self.updatePointsY.push(y);
     self.updatePointsLod.push(td);

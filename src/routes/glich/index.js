@@ -26,7 +26,7 @@ export default function Glich() {
   useEffect(() => {
     const { current } = canvasRef;
     if (current) {
-      drawer = new V3D12_GlichImpl(current, width, height, imageList[nowImage], 30);
+      drawer = new V3D12_GlichImpl(current, width, height, imageList[nowImage], 60);
     }
     return () => {
       drawer.reset();
@@ -34,15 +34,17 @@ export default function Glich() {
     };
   }, [canvasRef, width, height, nowImage]);
 
-  function random() {
+  function random(weak) {
     if (drawer) {
       drawer.reset();
-      const number = getRndInteger(4, 7);
+      const number = weak ? 1 : getRndInteger(2, 3);
       const deg = getRndInteger(1, 179);
       for (let i = 1; i <= number; i++) {
-        const size = getRndInteger(5, 20);
-        const glitch = getRndInteger(50 + 200 / number * (i - 1), 50 + 200 / number * i);
-        const offset = getRndOne(100, -100);
+        const size = weak ? getRndInteger(5, 20) : getRndInteger(40, 80);
+        const glitch = weak ?
+            getRndInteger(150 + 150 / number * (i - 1), 150 + 150 / number * i) :
+            getRndInteger(400 / number * (i - 1), 400 / number * i);
+        const offset = weak ? getRndOne(50, -50) : getRndOne(100, -100);
         drawer.start(deg, size, offset, glitch, i);
       }
     }
@@ -71,8 +73,11 @@ export default function Glich() {
         />
       </div>
       <div className='operation-area'>
-        <Button onClick={random} type='primary'>随机割裂</Button>
+        <Button onClick={() => random()} type='primary'>随机割裂(强)</Button>
         &nbsp;&nbsp;
+        <Button onClick={() => random(true)} type='primary'>随机割裂(弱)</Button>
+        &nbsp;&nbsp;
+        <br/><br/>
         <Button onClick={pause} type='primary'>暂停</Button>
         &nbsp;&nbsp;
         <Button onClick={reset}>重置</Button>

@@ -1,0 +1,18 @@
+.glitch2 {
+    display: flex;
+}
+.glitch2 p {
+    padding: 0;
+    margin: 8px 0 4px;
+    line-height: 1;
+    color: #9f9f9f;
+}
+.glitch2__btn {
+    margin-right: 4px;
+}
+.glitch2__groups {
+    margin-top: 6px;
+}
+.glitch2__form {
+    margin-left: 12px;
+}

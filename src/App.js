@@ -34,6 +34,11 @@ function App() {
             </NavLink>
           </li>
           <li>
+            <NavLink activeClassName="active" to="/glich2">
+              Glich Demo2
+            </NavLink>
+          </li>
+          <li>
             <NavLink activeClassName="active" to="/mosaic">
               Mosaic Demo
             </NavLink>

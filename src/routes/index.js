@@ -5,6 +5,7 @@ import Paint from './paint';
 import Moma01 from './moma01';
 import Moma02 from './moma02';
 import Glich from './glich';
+import Glich2 from './glich2';
 import Mosaic from './mosaic';
 import Splash from './splash';
 import Layout from './layout';
@@ -22,6 +23,7 @@ export default function Routes() {
         <Route exact path='/moma02' component={Moma02} />
         <Route exact path='/mosaic' component={Mosaic} />
         <Route exact path='/glich' component={Glich} />
+        <Route exact path='/glich2' component={Glich2} />
         <Route exact path='/splash' component={Splash} />
         <Route exact path='/layout' component={Layout} />
         <Route exact path='/three' component={Three} />
